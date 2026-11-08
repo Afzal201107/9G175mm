@@ -50,7 +50,7 @@ body{display:grid;place-items:center;overflow:hidden;background:radial-gradient(
 @keyframes openCore{0%,40%{--t:0}88%,100%{--t:1}}
 @media (prefers-reduced-motion:reduce){.plant,.glow{animation:none}.stem-seg{animation-name:none}.stem-seg--root{animation:stemGrow 2.4s cubic-bezier(.2,.7,.2,1) both}.leaf{animation:leafGrow 2.4s cubic-bezier(.2,.8,.2,1) var(--d) both}}
 
-/* ===== фото из цветка ===== */
+
 .scene{transition:opacity 3s ease 1.4s}.scene.gone{opacity:0}
 .stage{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:5}
 .wrap{position:absolute;left:0;top:50%;display:flex;align-items:center;gap:20px;width:max-content;height:min(64vh,49vw);margin-top:calc(min(64vh,49vw)/-2);visibility:hidden;will-change:transform}
@@ -74,10 +74,7 @@ body{display:grid;place-items:center;overflow:hidden;background:radial-gradient(
 @keyframes float{to{translate:0 -8px;filter:drop-shadow(0 0 30px rgba(255,120,150,.9))}}
 .again{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:7;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.35);color:#fff;border-radius:20px;padding:6px 14px;font:14px system-ui,sans-serif;cursor:pointer;opacity:0;transition:opacity 1s}
 .again.show{opacity:1}
-.again:not(.show){pointer-events:none}
-.addph{right:64px}
-
-/* ===== стартовая кнопка ===== */
+  
 body:not(.started) *,body:not(.started) *::before,body:not(.started) *::after{animation-play-state:paused!important}
 .start{position:fixed;inset:0;z-index:20;display:grid;place-items:center;transition:opacity 1s ease,visibility 1s}
 .start.hide{opacity:0;visibility:hidden;pointer-events:none}
@@ -108,37 +105,17 @@ body:not(.started) *,body:not(.started) *::before,body:not(.started) *::after{an
 <div class="start" id="start"><button id="startBtn" type="button"><i>▶</i> Запустить</button></div>
 <div class="lightbox" id="lightbox"><img id="lbImg" alt=""><button class="lb-btn lb-prev" id="lbPrev" type="button" aria-label="Назад">‹</button><button class="lb-btn lb-next" id="lbNext" type="button" aria-label="Вперёд">›</button><button class="lb-btn lb-close" id="lbClose" type="button" aria-label="Закрыть">×</button><div class="lb-count" id="lbCount"></div></div>
 <button class="again" id="again" onclick="location.reload()">↻</button>
-<button class="again addph" id="addPh" type="button">+ Фото</button>
-<input type="file" id="fileIn" accept="image/*" multiple hidden>
 <script>
 const IMGS=["photo1.jpg", "photo2.jpg", "photo3.jpg", "photo4.jpg", "photo5.jpg", "photo6.jpg", "photo7.jpg", "photo8.jpg", "photo9.jpg", "photo10.jpg", "photo11.jpg"];
 const wrap=document.getElementById('wrap');
-/* ===== сохранённые пользовательские фото (IndexedDB) ===== */
-const DB=()=>new Promise((res,rej)=>{
-  try{
-    const q=indexedDB.open('bestclass',1);
-    q.onupgradeneeded=()=>q.result.createObjectStore('photos',{autoIncrement:true});
-    q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error);
-  }catch(e){rej(e);}
-});
-function loadSaved(){
-  return DB().then(db=>new Promise(res=>{
-    const r=db.transaction('photos').objectStore('photos').getAll();
-    r.onsuccess=()=>res(r.result.map(b=>URL.createObjectURL(b)));
-    r.onerror=()=>res([]);
-  })).catch(()=>[]);
-}
-function savePhoto(blob){
-  return DB().then(db=>{db.transaction('photos','readwrite').objectStore('photos').add(blob);}).catch(()=>{});
-}
 const startP=new Promise(r=>{window.__start=r;});
 const EMERGE=15400, SPEED=55;
-Promise.all([loadSaved().then(saved=>Promise.all(IMGS.concat(saved).map(s=>new Promise(res=>{
+Promise.all([Promise.all(IMGS.map(s=>new Promise(res=>{
   const i=new Image();
   i.onload=()=>res(i);
   i.onerror=()=>{console.warn('Не найден файл:',s);res(null);};
   i.alt='';i.src=s;
-})))),startP]).then(([list])=>{
+}))),startP]).then(([list])=>{
 const slides=list.filter(Boolean);
 slides.forEach(i=>wrap.appendChild(i));
 window.__slides=slides;
@@ -156,23 +133,16 @@ setTimeout(()=>{
     {transform:'translate(0,0) scale(1) rotate(0deg)',opacity:1}
   ],{duration:3600,easing:'cubic-bezier(.2,.75,.2,1)',fill:'both'});
   document.getElementById('scene').classList.add('gone');
-  const runScroll=()=>{
-    const x1=(innerWidth-slides[0].offsetWidth)/2;
+  setTimeout(()=>{
     const w=wrap.offsetWidth;
     wrap.classList.add('go');
-    if(window.__slideAnim)window.__slideAnim.cancel();
-    const a=wrap.animate([{transform:`translateX(${x1}px)`},{transform:`translateX(${-w}px)`}],{duration:(x1+w)/SPEED*1000,easing:'linear',fill:'forwards'});
+    const a=wrap.animate([{transform:`translateX(${x0}px)`},{transform:`translateX(${-w}px)`}],{duration:(x0+w)/SPEED*1000,easing:'linear',fill:'forwards'});
     window.__slideAnim=a;
     a.onfinish=()=>{
       document.getElementById('title').classList.add('show');
-      setTimeout(()=>{
-        document.getElementById('again').classList.add('show');
-        document.getElementById('addPh').classList.add('show');
-      },3000);
+      setTimeout(()=>document.getElementById('again').classList.add('show'),4500);
     };
-  };
-  window.__runScroll=runScroll;
-  setTimeout(runScroll,6000);
+  },6000);
 },EMERGE);
 });
 </script>
@@ -214,29 +184,6 @@ setTimeout(()=>{
     if(e.key==='Escape')close();
     else if(e.key==='ArrowLeft')show(idx-1);
     else if(e.key==='ArrowRight')show(idx+1);
-  });
-})();
-</script>
-<script>
-(function(){
-  const inp=document.getElementById('fileIn');
-  document.getElementById('addPh').addEventListener('click',()=>inp.click());
-  inp.addEventListener('change',async()=>{
-    const files=[...inp.files].filter(f=>f.type.startsWith('image/'));
-    inp.value='';
-    const slides=window.__slides;
-    if(!files.length||!slides||!window.__runScroll)return;
-    const wrap=document.getElementById('wrap');
-    const added=await Promise.all(files.map(f=>new Promise(res=>{
-      const i=new Image();
-      i.onload=()=>res(i);i.onerror=()=>res(null);
-      i.alt='';i.src=URL.createObjectURL(f);
-    })));
-    added.forEach((i,k)=>{if(i){wrap.appendChild(i);slides.push(i);savePhoto(files[k]);}});
-    document.getElementById('title').classList.remove('show');
-    document.getElementById('again').classList.remove('show');
-    document.getElementById('addPh').classList.remove('show');
-    window.__runScroll();
   });
 })();
 </script>
